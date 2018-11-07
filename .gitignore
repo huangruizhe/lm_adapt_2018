@@ -3,6 +3,7 @@
 data/
 src/main/test_arpa.py
 src/main/kneser_ney.py
+src/main/compare_arpa.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

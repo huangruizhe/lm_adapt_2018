@@ -195,18 +195,32 @@ class NgramCounts:
 
         # 1) compute discounting constant
         self.d = [0]  # TODO: vocabulary
-        for n in range(1, self.ngram_order):
+        # for n in range(1, self.ngram_order):
+        #     this_order_counts = self.counts[n]
+        #     n1 = 0
+        #     n2 = 0
+        #     for hist, counts_for_hist in this_order_counts.items():
+        #         stat = Counter(counts_for_hist.word_to_count.values())
+        #         n1 += stat[1]
+        #         n2 += stat[2]
+        #     assert n1 + 2 * n2 > 0
+        #     d_n = n1 * 1.0 / (n1 + 2 * n2)
+        #     assert d_n < 1
+        #     self.d.append(d_n)
+
+        # discount uniformly
+        n1 = 0
+        n2 = 0
+        for n in range(0, self.ngram_order):
             this_order_counts = self.counts[n]
-            n1 = 0
-            n2 = 0
             for hist, counts_for_hist in this_order_counts.items():
                 stat = Counter(counts_for_hist.word_to_count.values())
                 n1 += stat[1]
                 n2 += stat[2]
-            assert n1 + 2 * n2 > 0
-            d_n = n1 * 1.0 / (n1 + 2 * n2)
-            assert d_n < 1
-            self.d.append(d_n)
+        assert n1 + 2 * n2 > 0
+        d_n = n1 * 1.0 / (n1 + 2 * n2)
+        assert d_n < 1
+        self.d.extend([d_n] * (self.ngram_order - 1))
 
         print("discounting constants:", self.d)
 
