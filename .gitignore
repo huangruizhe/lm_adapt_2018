@@ -1,6 +1,8 @@
 # pycharm
 .idea
 data/
+!data/c5\.txt
+!data/c5\.ngrams
 src/main/test_arpa.py
 src/main/kneser_ney.py
 src/main/compare_arpa.py

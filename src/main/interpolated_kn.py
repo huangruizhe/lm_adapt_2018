@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Copyright 2016  Johns Hopkins University (Author: Daniel Povey)
-#           2018  Ruizhe Huang
+# Copyright 2018  Ruizhe Huang
+#
 # Apache 2.0.
 
 # This is an implementation of computing Kneser-Ney smoothed language model.
@@ -53,7 +53,8 @@ class CountsForHistory:
         # arguments that returns a new defaultdict(float).
         self.word_to_count = defaultdict(int)
         self.word_to_context = defaultdict(set)  # using a set to count the number of unique contexts
-        self.word_to_f = dict()  # discounted probability
+        self.word_to_f = dict()  # final interpolated probability
+        self.word_to_g = dict()  # discounted probability
         self.word_to_bow = dict()  # back-off weight
         self.total_count = 0
 
@@ -251,7 +252,10 @@ class NgramCounts:
                 # probabilities
                 for z, c_a_z in counts_for_hist.word_to_count.items():
                     g_a_z = max((c_a_z - self.d[n]), 0) * 1.0 / c_a_
+                    counts_for_hist.word_to_g[z] = g_a_z
+                    print("%s" % str(a_ + tuple([z])), g_a_z)
                     counts_for_hist.word_to_f[z] = g_a_z + bow_a_ * self.counts[n - 1][a_[1:]].word_to_f[z]
+
 
     # TODO: remember to leave interface for MDI calculation
     # TODO: might need to specify vocabulary -- not assuming the corpus contains all vocabulary
