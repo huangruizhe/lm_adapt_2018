@@ -14,8 +14,6 @@ from collections import defaultdict
 default_encoding = "latin-1"
 
 
-# TODO: specify external vocabulary for lm
-
 def load_background(filename, encoding=default_encoding):
     B_models = arpa.loadf(filename, encoding=encoding)
     B = B_models[0]  # ARPA files may contain several models.
@@ -91,7 +89,7 @@ def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
         len_h = n - 1
         for h, w_list in B_hist_index[len_h].items():
             z_h = cal_z(h, B, f_B_star, B_hist_index, alpha, z_epsilon)
-            z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
+            z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)  # we can cache this
 
             bow_A_h = (B._base ** float(B._log_bo(h))) * z_h_prime / z_h
             A_adapted._bos[h] = bow_A_h
@@ -114,18 +112,18 @@ def save_A_adapted_arpa(filename, A_adapted):
 if __name__ == '__main__':
 
     # params
-    B_filename = "/Users/huangruizhe/Downloads/PycharmProjects/lm_adapt/data/c5-inter.lm"
-    A_filename = "/Users/huangruizhe/Downloads/PycharmProjects/lm_adapt/data/c5-inter.lm"
+    out_domain_lm = "/Users/huangruizhe/Downloads/PycharmProjects/lm_adapt/data/c5-inter.lm"  # out-domain (background)
+    in_domain_lm = "/Users/huangruizhe/Downloads/PycharmProjects/lm_adapt/data/c5-inter.lm"  # in-domain
     gamma = 1  # 0 < gamma <= 1
 
     # Note: B should be an interpolated ngram model
-    B, f_B_star, B_hist_index = load_background(B_filename)  # out-domain data
+    B, f_B_star, B_hist_index = load_background(out_domain_lm)  # out-domain data
 
-    A = load_adaptation_sample(A_filename)  # in-domain data
+    A = load_adaptation_sample(in_domain_lm)  # in-domain data
 
     alpha = cal_alpha(gamma, A, B)
 
     z_epsilon = sum([float(B.p(w)) * alpha[w] for w in B.vocabulary()])  # z_epsilon
 
     A_adapted = cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon)
-    save_A_adapted_arpa(A_filename + ".adapted", A_adapted)
+    save_A_adapted_arpa(in_domain_lm + ".adapted", A_adapted)

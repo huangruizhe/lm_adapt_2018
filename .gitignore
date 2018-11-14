@@ -3,9 +3,9 @@
 data/
 !data/c5\.txt
 !data/c5\.ngrams
-src/main/test_arpa.py
-src/main/kneser_ney.py
-src/main/compare_arpa.py
+src/adapt/test_arpa.py
+src/adapt/kneser_ney.py
+src/adapt/compare_arpa.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
