@@ -24,3 +24,4 @@ ngram -order 4 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o4g.kn
 # Perplexity for SWBD1 4-gram LM:
 # file /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt: 10000 sentences, 118254 words, 0 OOVs
 # 0 zeroprobs, logprob= -246110.4 ppl= 82.97167 ppl1= 120.5596
+

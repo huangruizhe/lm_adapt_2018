@@ -1,0 +1,22 @@
+
+
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o3g.kn.arpa -ppl /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt
+file /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt: 10000 sentences, 118254 words, 0 OOVs
+0 zeroprobs, logprob= -247200.5 ppl= 84.61146 ppl1= 123.1459
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/lmadapt/data/swbd/sw1.o3g.kn.arpa.adapted -ppl /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt
+file /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt: 10000 sentences, 118254 words, 0 OOVs
+0 zeroprobs, logprob= -249302.7 ppl= 87.8659 ppl1= 128.2913
+
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o3g.kn.arpa -ppl /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm_adapt/eval2000/eval2000.raw
+file /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm_adapt/eval2000/eval2000.raw: 4458 sentences, 42716 words, 0 OOVs
+0 zeroprobs, logprob= -93052.59 ppl= 93.8728 ppl1= 150.8
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/lmadapt/data/swbd/sw1.o3g.kn.arpa.adapted -ppl /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm_adapt/eval2000/eval2000.raw
+file /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm_adapt/eval2000/eval2000.raw: 4458 sentences, 42716 words, 0 OOVs
+0 zeroprobs, logprob= -82067 ppl= 54.91184 ppl1= 83.41113
+
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o3g.kn.arpa -ppl "/export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm/text/dev.txt"
+file /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm/text/dev.txt: 5197 sentences, 61543 words, 0 OOVs
+0 zeroprobs, logprob= -115626.7 ppl= 54.0126 ppl1= 75.64769
+rhuang@a12:/export/a12/rhuang/lmadapt/data/swbd$ ngram -order 3 -unk -lm /export/a12/rhuang/lmadapt/data/swbd/sw1.o3g.kn.arpa.adapted -ppl "/export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm/text/dev.txt"
+file /export/a07/keli1/kaldi-2/egs/swbd/s5c/data/rnnlm/text/dev.txt: 5197 sentences, 61543 words, 0 OOVs
+0 zeroprobs, logprob= -126821.5 ppl= 79.47543 ppl1= 115.0001
