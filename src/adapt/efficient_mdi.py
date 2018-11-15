@@ -99,7 +99,6 @@ def cal_alpha(gamma, A, B):
     return alpha
 
 
-# TODO: to speed up, caching mechanism can be applied here (even offline), for those z-values that are expensive to compute
 def cal_z(h, B, f_B_star, B_hist_index, alpha, z_epsilon):
     # Note: type(h) == tuple
 
@@ -107,8 +106,13 @@ def cal_z(h, B, f_B_star, B_hist_index, alpha, z_epsilon):
         return z_epsilon
     else:
         # TODO: statistics can be done here
-        z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
-        return sum([f_B_star[h + (w,)] * alpha[w] for w in B_hist_index[len(h)][h]]) + B._base ** float(B._bos[h]) * z_h_prime
+        # z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
+        z_h_prime = zh1.get(h[1:], None)
+        if z_h_prime is None:
+            z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
+        z_h = sum([f_B_star[h + (w,)] * alpha[w] for w in B_hist_index[len(h)][h]]) + B._base ** float(B._bos[h]) * z_h_prime
+        zh2[h] = z_h
+        return z_h
 
 
 def cal_p_A(hw, alpha, B, z_h):
@@ -118,35 +122,48 @@ def cal_p_A(hw, alpha, B, z_h):
 def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
     A_adapted = ARPAModelSimple()
 
+    global zh1, zh2
+
+    check_sum = 0
+
     # unigram
     for e in B._entries(1):
         w = e[1]
         p_A_w = float(p(B, w)) * alpha[w[0]] / z_epsilon
         A_adapted.add_entry(ngram=w, p=math.log(p_A_w, B._base))
+        check_sum += p_A_w
+    assert check_sum - 1 < 0.0001
+    zh2[tuple()] = z_epsilon
 
     # ngram, n >= 2
     for n in range(2, B.order() + 1):
         print("processing %d-gram..." % n)
-        # progress_count = 0
+        progress_count = 0
+
+        zh1.clear()
+        zh1 = zh2
+        zh2 = dict()
+
         len_h = n - 1
         for h, w_list in B_hist_index[len_h].items():
             z_h = cal_z(h, B, f_B_star, B_hist_index, alpha, z_epsilon)
-            z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)  # we can cache this
+            z_h_prime = zh1.get(h[1:], None)  # we can cache this
+            if z_h_prime is None:
+                z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
 
             bow_A_h = (B._base ** float(B._bos[h])) * z_h_prime / z_h
             A_adapted._bos[h] = bow_A_h
 
+            check_sum = 0
+
             for w in w_list:
                 hw = h + (w,)
                 p_A_hw = cal_p_A(hw, alpha, B, z_h)
-                try:
-                    A_adapted.add_entry(ngram=hw, p=math.log(p_A_hw, B._base))
-                except:
-                    print("hw", hw, "p_A_hw", p_A_hw, "B._base", B._base, "z_h", z_h)
+                A_adapted.add_entry(ngram=hw, p=math.log(p_A_hw, B._base))
 
-                # progress_count += 1
-                # if progress_count % 5000 == 0:
-                #     print(progress_count)
+                progress_count += 1
+                if progress_count % 50000 == 0:
+                    print(progress_count)
 
     for order, count in B.counts():
         A_adapted.add_count(order, count)
@@ -162,12 +179,18 @@ if __name__ == '__main__':
 
     # params
     out_domain_lm = sys.argv[1]  # out-domain (background)
-    in_domain_lm = sys.argv[2]  # in-domain
-    gamma = float(sys.argv[3])  # 0 < gamma <= 1
+    in_domain_lm = sys.argv[2]   # in-domain
+    gamma = float(sys.argv[3])   # 0 < gamma <= 1
+    outfile = sys.argv[4]        # output arpa file
 
     print("out:", out_domain_lm)
     print("in:", in_domain_lm)
     print("gamma: %f" % gamma)
+    print("outfile: ", outfile)
+
+    global zh1, zh2
+    zh1 = dict()  # h'
+    zh2 = dict()  # h
 
     # Note: B should be an interpolated ngram model
     print("loading out-domain lm...")
@@ -185,7 +208,7 @@ if __name__ == '__main__':
 
     print("cal adapted model...")
     A_adapted = cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon)
-    save_A_adapted_arpa(in_domain_lm + ".adapted", A_adapted)
+    save_A_adapted_arpa(outfile, A_adapted)
 
-    print("Adapted lm saved to: %s" % (in_domain_lm + ".adapted"))
+    print("Adapted lm saved to: %s" % outfile)
 
