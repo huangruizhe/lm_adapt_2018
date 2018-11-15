@@ -15,3 +15,5 @@ echo "compute 5gram model..."
 ngram-count -order 5 -lm ${work_dir}5gram.lm -vocab $vocab -unk -text $out_domain_train -cdiscount $dis_factor -interpolate -gt1min 0 -gt2min 0 -gt3min 0 -gt4min 0 -gt5min 0
 
 
+
+ngram-count -text "/export/a12/rhuang/lmadapt/data/tedlium/train/tedlium.txt" -order 5 -limit-vocab -vocab "/export/a07/keli1/kaldi-2/egs/swbd/s5c/data/lang/words.txt" -unk -map-unk "<unk>" -kndiscount -interpolate -lm "/export/a12/rhuang/lmadapt/data/tedlium/5gram.kn.gz"

@@ -2,14 +2,25 @@
 
 # compute interpolated kn lm on in-domain data only
 
-# words have been converted to int for time and space efficiency
-vocab="/export/a12/rhuang/lmadapt/data/swbd/words.txt.int"
-in_domain_train="/export/a12/rhuang/lmadapt/data/swbd/swbd.txt.int"
+# first run: pocolm/egs/swbd/local/srilm_baseline.sh
 
-work_dir="/export/a12/rhuang/lmadapt/data/swbd/"
+ngram-count -text /export/a12/rhuang/pocolm/egs/swbd/data/text/swbd1.txt -order 3 -limit-vocab -vocab /export/a12/rhuang/pocolm/egs/swbd/data/srilm/wordlist \
+  -unk -map-unk "<unk>" -kndiscount -interpolate -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o3g.kn.arpa
 
-ngram-count -text $in_domain_train -order 5 -write ${work_dir}5gram.count
-dis_factor=$(/export/a12/rhuang/lmadapt/scripts/cal_dis_factor.py ${work_dir}5gram.count)
-echo "The suggested discount factor is $dis_factor"  # The suggested discount factor is 0.416549
-ngram-count -order 5 -lm ${work_dir}5gram.lm -vocab $vocab -unk -text $in_domain_train -cdiscount $dis_factor -interpolate -gt1min 0 -gt2min 0 -gt3min 0 -gt4min 0 -gt5min 0
+echo "Perplexity for SWBD1 trigram LM:"
+ngram -order 3 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o3g.kn.arpa -ppl /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt
 
+# Perplexity for SWBD1 trigram LM:
+# file /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt: 10000 sentences, 118254 words, 0 OOVs
+# 0 zeroprobs, logprob= -247200.5 ppl= 84.61146 ppl1= 123.1459
+
+
+ngram-count -text /export/a12/rhuang/pocolm/egs/swbd/data/text/swbd1.txt -order 4 -limit-vocab -vocab /export/a12/rhuang/pocolm/egs/swbd/data/srilm/wordlist \
+  -unk -map-unk "<unk>" -kndiscount -interpolate -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o4g.kn.arpa
+
+echo "Perplexity for SWBD1 4-gram LM:"
+ngram -order 4 -unk -lm /export/a12/rhuang/pocolm/egs/swbd/data/srilm/sw1.o4g.kn.arpa -ppl /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt
+
+# Perplexity for SWBD1 4-gram LM:
+# file /export/a12/rhuang/pocolm/egs/swbd/data/text/dev.txt: 10000 sentences, 118254 words, 0 OOVs
+# 0 zeroprobs, logprob= -246110.4 ppl= 82.97167 ppl1= 120.5596
