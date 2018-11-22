@@ -46,6 +46,37 @@ def p(B, ngram):
     return B._base ** log_p(B, ngram)
 
 
+log_10_e = math.log10(math.e)
+
+
+def logsumexp10(a, b):
+    return np.logaddexp(a/log_10_e, b/log_10_e) * log_10_e
+
+
+# compute log(1+x) without losing precision for small values of x
+def log10_1addx(x, base=10):
+    assert x > -1.0
+
+    if abs(x) > 1e-4:
+        return math.log(1.0 + x, base)
+
+    # Use Taylor approx. log(1 + x) = x - x^2/2 with error roughly x^3/3
+    # Since |x| < 10^-4, |x|^3 < 10^-12, relative error less than 10^-8
+
+    return (-0.5*x + 1.0)*x
+
+
+def logminusexp10(x, y):
+    # x >= y
+    # ref: http://www.cs.jhu.edu/~jason/465/hw-hmm/hw-hmm.pdf
+    if y > x:
+        print("error in logminusexp10")
+        exit()
+
+    # y <= x
+    return x + log10_1addx(- 10 ** (y-x))
+
+
 def load_background(filename, encoding=default_encoding):
     B_models = arpa.loadf(filename, encoding=encoding)
     B = B_models[0]  # ARPA files may contain several models.
@@ -67,7 +98,7 @@ def load_background(filename, encoding=default_encoding):
             h_prime_w = hw[1:]
             # f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._log_bo(h)) + float(B.log_p(h_prime_w)))
             # f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._bos[h]) + float(log_p(B, h_prime_w)))
-            f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._bos[h]) + float(log_p(B, h_prime_w)))
+            f_B_star[hw] = logminusexp10(float(e[0]), float(B._bos[h]) + log_p(B, h_prime_w))  # float()?
 
             # progress_count += 1
             # if progress_count % 2000 == 0:
@@ -101,7 +132,7 @@ def load_adaptation_sample(filename, encoding=default_encoding):
 def cal_alpha(gamma, A, B):
     alpha = dict()
     for w in B.vocabulary():
-        alpha[w] = B._base ** ((float(log_p(A, (w,))) - float(log_p(B, (w,)))) * gamma)
+        alpha[w] = (float(log_p(A, (w,))) - float(log_p(B, (w,)))) * gamma
     return alpha
 
 
@@ -116,17 +147,22 @@ def cal_z(h, B, f_B_star, B_hist_index, alpha, z_epsilon):
         z_h_prime = zh1.get(h[1:], None)
         if z_h_prime is None:
             z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
-        z_h = sum([f_B_star[h + (w,)] * alpha[w] for w in B_hist_index[len(h)][h]]) + B._base ** float(B._bos[h]) * z_h_prime
+
+        z_h = float("-inf")
+        for w in B_hist_index[len(h)][h]:
+            z_h = logsumexp10(z_h, f_B_star[h + (w,)] + alpha[w])
+        z_h = logsumexp10(z_h, float(B._bos[h]) + z_h_prime)
         zh2[h] = z_h
         return z_h
 
 
 def cal_p_A_old(hw, alpha, B, z_h):
-    return p(B, hw) * alpha[hw[-1]] / z_h
+    return log_p(B, hw) + alpha[hw[-1]] - z_h
 
 
 def cal_p_A(hw, f_B_star, alpha, z_h, bow_A_h, A):
-    f_A_star_hw = f_B_star[hw] * alpha[hw[-1]] / z_h
+    f_A_star_hw = f_B_star[hw] + alpha[hw[-1]] - z_h
+
     p_A_hw = f_A_star_hw + bow_A_h * p(A, hw[1:])
     return p_A_hw
 
@@ -136,16 +172,16 @@ def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
 
     global zh1, zh2
 
-    check_sum = 0
+    check_sum = float("-inf")
 
     # unigram
     print("processing unigram...")
     for e in B._entries(1):
         w = e[1]
-        p_A_w = float(p(B, w)) * alpha[w[0]] / z_epsilon
-        A_adapted.add_entry(ngram=w, p=math.log(p_A_w, B._base))
-        check_sum += p_A_w
-    assert check_sum - 1 < 0.0001
+        p_A_w = log_p(B, w) + alpha[w[0]] - z_epsilon
+        A_adapted.add_entry(ngram=w, p=p_A_w)
+        check_sum = logsumexp10(check_sum, p_A_w)
+    assert abs(check_sum - 0) < 0.0001
     zh2[tuple()] = z_epsilon
 
     # ngram, n >= 2
@@ -164,8 +200,8 @@ def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
             if z_h_prime is None:
                 z_h_prime = cal_z(h[1:], B, f_B_star, B_hist_index, alpha, z_epsilon)
 
-            bow_A_h = (B._base ** float(B._bos[h])) * z_h_prime / z_h
-            A_adapted._bos[h] = math.log(bow_A_h, B._base)
+            bow_A_h = float(B._bos[h]) + z_h_prime - z_h
+            A_adapted._bos[h] = bow_A_h
 
             for w in w_list:
                 hw = h + (w,)
@@ -225,7 +261,8 @@ if __name__ == '__main__':
     alpha = cal_alpha(gamma, A, B)
 
     print("cal z_epsilon...")
-    z_epsilon = sum([p(B, (w,)) * alpha[w] for w in B.vocabulary()])  # z_epsilon
+    # z_epsilon = sum([p(B, (w,)) * alpha[w] for w in B.vocabulary()])  # z_epsilon
+    z_epsilon = 0
     print("z_epsilon = %f" % z_epsilon)
 
     print("cal adapted model...")
