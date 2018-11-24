@@ -188,7 +188,7 @@ def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
 
 
 def save_A_adapted_arpa(filename, A_adapted):
-    arpa.dumpf(A_adapted, filename, encoding=default_encoding)
+    arpa.dumpf(A_adapted, filename)
 
 
 if __name__ == '__main__':
