@@ -9,16 +9,12 @@
 import argparse
 import math
 import arpa
+import gzip
 import sys
 import numpy as np
 from arpa.models.simple import ARPAModelSimple
 from collections import defaultdict
 
-default_encoding = "latin-1"
-
-
-# TODO: logsumexp
-# TODO: all operations in log domain
 
 def log_p(B, ngram):
     # words = B._check_input(ngram)
@@ -46,8 +42,11 @@ def p(B, ngram):
     return B._base ** log_p(B, ngram)
 
 
-def load_background(filename, encoding=default_encoding):
-    B_models = arpa.loadf(filename, encoding=encoding)
+def load_background(filename):
+    if filename.endswith(".gz"):
+        B_models = arpa.load(gzip.open(filename, mode='rt'))
+    else:
+        B_models = arpa.loadf(filename)
     B = B_models[0]  # ARPA files may contain several models.
 
     # We can recover f_B_star (i.e., discounted probabilities) from interpolated probabilities
@@ -65,9 +64,8 @@ def load_background(filename, encoding=default_encoding):
             hw = e[1]
             h = hw[:-1]
             h_prime_w = hw[1:]
-            # f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._log_bo(h)) + float(B.log_p(h_prime_w)))
-            # f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._bos[h]) + float(log_p(B, h_prime_w)))
             f_B_star[hw] = B._base ** float(e[0]) - B._base ** (float(B._bos[h]) + float(log_p(B, h_prime_w)))
+            # assert f_B_star[hw] >= 0
 
             # progress_count += 1
             # if progress_count % 2000 == 0:
@@ -92,8 +90,11 @@ def load_background(filename, encoding=default_encoding):
     return B, f_B_star, B_hist_index
 
 
-def load_adaptation_sample(filename, encoding=default_encoding):
-    A_models = arpa.loadf(filename, encoding=encoding)
+def load_adaptation_sample(filename):
+    if filename.endswith(".gz"):
+        A_models = arpa.load(gzip.open(filename, mode='rt'))
+    else:
+        A_models = arpa.loadf(filename)
     A = A_models[0]
     return A
 
@@ -177,7 +178,7 @@ def cal_A_adapted_arpa(B, f_B_star, B_hist_index, alpha, z_epsilon):
                 A_adapted.add_entry(ngram=hw, p=math.log(p_A_hw, B._base))
 
                 progress_count += 1
-                if progress_count % 50000 == 0:
+                if progress_count % 1000000 == 0:
                     print(progress_count)
 
     for order, count in B.counts():
